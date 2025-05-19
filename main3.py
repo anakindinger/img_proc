@@ -25,7 +25,8 @@ import sys
 INPUT_IMAGE =  'Wind Waker GC.bmp'
 LIMIAR = 125 # Limiar para o bright-pass, de 0 a 255
 SIGMAS = [1, 2, 4, 8, 16] # Valores de sigma crescentes para o filtro Gaussiano
-
+KERNELS = [3, 5, 7] # Tamanhos de kernel para o box blur
+ITERATIONS = 3 # Número de iterações para o box blur
 # CONSTANTES
 
 
@@ -43,27 +44,28 @@ SIGMAS = [1, 2, 4, 8, 16] # Valores de sigma crescentes para o filtro Gaussiano
     *Aplicar a máscara das áreas brilhantes no resultado do filtro para isolar o brilho.
 * Combinar os resultados dos filtros Gaussianos com diferentes sigma (por exemplo, somando-os).
 * Adicionar a imagem combinada de volta à imagem original para criar o efeito bloom.
-* Garantir que os valores dos pixels permaneçam dentro da faixa válida (0-255).
+* Garantir que os valores dos pixels permaneçam dentro da faixa válida (0-255).'''
+def gaussian_bloom (img, sigmas, kernel_size):
+    img_gbloom = np.zeros_like (img)
+    #for s in sigmas:
+    return img_gbloom
 
-3. Função de Bloom com Box Blur:
-
-* Implementar uma função similar à anterior, recebendo a imagem original, o limiar, uma lista de tamanhos de kernel para o box blur e o número de iterações para cada kernel.
-* Chamar a função de bright-pass para obter a máscara.
-* Para cada tamanho de kernel na lista:
-    * Aplicar o filtro de box blur (cv2.blur ou cv2.boxFilter do OpenCV) na imagem original o número especificado de vezes (iterations).
-    * Aplicar a máscara das áreas brilhantes no resultado do filtro.
-* Combinar os resultados dos filtros de box blur.
-* Adicionar a imagem combinada de volta à original.
-* Garantir a faixa de valores dos pixels.
-
-4. Script Principal:
-
-* Carregar uma imagem de teste usando OpenCV (cv2.imread).
-* Definir os parâmetros para as duas versões do bloom (limiar, valores de sigma crescentes para o Gaussiano, tamanhos de kernel e número de iterações para o box blur).
-* Chamar as duas funções de bloom com os parâmetros definidos.
-* Exibir as imagens resultantes (original e com os dois tipos de bloom) usando cv2.imshow.
-* Salvar as imagens resultantes usando cv2.imwrite.
-* Garantir que o script lide com a possibilidade de a imagem não ser carregada corretamente.'''
+def box_bloom(img, kernels, iterations):
+    '''3. Função de Bloom com Box Blur:
+    Entrada:
+    img é a máscara do bright-pass obtida na função bright_pass.
+    kernels é uma lista de tamanhos de kernel para o box blur.
+    iterations é o número de iterações para cada kernel
+    Saída:
+    img_bbloom é a imagem resultante do efeito bloom com box blur para ser somada à imagem original.
+    '''
+    img_bbloom = np.zeros_like (img)
+    for k in kernels:
+        for _ in range(iterations):
+            # Aplica o filtro box blur na imagem
+            img_bbloom = cv2.boxFilter (img, -1, (k, k))
+            
+    return img_bbloom
 #===============================================================================
 def bright_pass (img, limiar):
 
@@ -72,37 +74,43 @@ def bright_pass (img, limiar):
     O filtro bright-pass é aplicado na luminância da imagem, onde os pixels com
     luminância maior que o limiar são mantidos e os demais são zerados.
     '''
-    img_limiar = np.zeros (img.shape, dtype =np.uint8)
+    img_mascara = np.zeros_like (img) # Cria uma imagem de saída com o mesmo tamanho da imagem de entrada
     for i in range (img.shape[0]):
         for j in range (img.shape[1]):
             # Se o pixel for maior que o limiar, copia o pixel para a imagem de saída
             if img[i, j, 1] > limiar:
-                img_limiar[i, j] = img[i, j]
+                img_mascara[i, j] = img[i, j]
             else:
-                img_limiar[i, j] = 0
+                img_mascara[i, j] = 0
 
-    return img_limiar
+    return img_mascara
 
 #===============================================================================
 def main ():
+
+    '''TODO: 4. Script Principal:
+
+    OK* Carregar uma imagem de teste usando OpenCV (cv2.imread).
+    OK* Definir os parâmetros para as duas versões do bloom (limiar, valores de sigma crescentes para o Gaussiano, tamanhos de kernel e número de iterações para o box blur).
+    * Chamar as duas funções de bloom com os parâmetros definidos.
+    * Exibir as imagens resultantes (original e com os dois tipos de bloom) usando cv2.imshow.
+    * Salvar as imagens resultantes usando cv2.imwrite.
+    * Garantir que o script lide com a possibilidade de a imagem não ser carregada corretamente.'''
 
     # Abre a imagem em formato HSL para usar a luminancia no bright-pass.
     img = cv2.imread (INPUT_IMAGE, cv2.IMREAD_COLOR)
     if img is None:
         print ('Erro abrindo a imagem.\n')
         sys.exit ()
-
-
     cv2.imshow('Original', img)
+
+
     img = cv2.cvtColor (img, cv2.COLOR_RGB2HLS)
-    print (np.max (img[:, :, 1]))
-    print (np.min (img[:, :, 1]))
-
-    #mascara = bright_pass (img, LIMIAR)
-    #mascara = cv2.cvtColor (mascara, cv2.COLOR_HLS2RGB)
-    #cv2.imshow ('Mascara', mascara)
-
-   
+    
+    # Aplica o filtro bright-pass na imagem
+    img_mascara = bright_pass (img, LIMIAR)
+    #img_mascara = cv2.cvtColor (img_mascara, cv2.COLOR_HLS2RGB)
+    cv2.imshow ('Bright-pass', img_mascara)
 
    
 
